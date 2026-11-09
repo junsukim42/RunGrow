@@ -1,4 +1,27 @@
 # 러닝 앱 기술 명세서
+
+## 실행 가능한 모바일 UI 프로토타입
+
+`mobile/`에 React Native + Expo로 구현한 **나란히** UI 앱이 있습니다. 홈·기록·달리기 준비·순위·내 정보와 코칭·코스·러닝·결과·친구 대결 화면을 눌러볼 수 있습니다.
+
+저장소 루트에서 실행합니다.
+
+```powershell
+cd mobile
+npm install
+npm start
+```
+
+PC와 휴대폰을 같은 Wi-Fi에 연결한 뒤 Expo Go로 QR 코드를 스캔합니다. 브라우저 미리보기는 `npm run web`입니다.
+
+현재 구현 범위는 **UI와 데모 상호작용**입니다. GPS·로그인·서버·건강 앱 연동은 아래 기술 명세의 후속 구현 범위이며, 현재 앱에는 연결하지 않았습니다.
+
+- [앱 실행·검사 안내](mobile/README.md)
+- [앱 화면 미리보기](mobile/preview.jpg)
+- [Figma 디자인](https://www.figma.com/design/SC7ueYJZe8l1A0pMsW0qTP)
+
+---
+
 https://claude.ai/artifact/6owKePof1t67SM1GKqXq2M
 Nov 3, 2026 · @wnstn
 

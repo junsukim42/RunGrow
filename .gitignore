@@ -1,0 +1,7 @@
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/test-results/
+mobile/playwright-report/
+mobile/.claude/
+*.log

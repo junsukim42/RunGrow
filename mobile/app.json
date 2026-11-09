@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "나란히",
+    "slug": "naranhi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.naranhi.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#111D43",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.naranhi.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "나란히 러닝"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-image",
+      "expo-router"
+    ],
+    "scheme": "naranhi"
+  }
+}
