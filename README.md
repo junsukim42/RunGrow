@@ -1,5 +1,5 @@
 # 러닝 앱 기술 명세서
-
+https://claude.ai/artifact/6owKePof1t67SM1GKqXq2M
 Nov 3, 2026 · @wnstn
 
 ## 개요와 범위
