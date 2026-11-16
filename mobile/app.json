@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "RunGrow",
+    "slug": "rungrow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rungrow.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "러닝 거리와 위치 정확도를 측정하려면 정밀한 위치가 필요해요. 측정을 시작하면 화면이 잠겨도 위치를 받아요.",
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#111D43",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rungrow.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "RunGrow"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-image",
+      "expo-router"
+    ],
+    "scheme": "rungrow"
+  }
+}
