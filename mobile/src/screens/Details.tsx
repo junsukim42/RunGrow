@@ -8,7 +8,7 @@ import { useCourse, useDemo } from '../state';
 
 export function CoachingScreen() {
   const { setDistance, setMode } = useDemo();
-  const start = () => { setDistance(6); setMode('solo'); router.push('/run'); };
+  const start = () => { setDistance(6); setMode('coaching'); router.push('/run'); };
   return <Screen testID="screen-coaching" footer={<Button onPress={start}>이 운동으로 달리기</Button>}><Header title="오늘의 코칭" /><T size={11} weight="medium" color={colors.blue}>10km 완주 플랜 · 4주 차 월요일</T><T size={30} weight="bold">가볍게 6km,{`\n`}1km당 6:20</T>
     <Card tone="soft"><T size={11} weight="bold" color={colors.blue}>회복을 위한 러닝</T><T size={20} weight="bold">어제는 강하게,{`\n`}오늘은 편안하게.</T><T size={12} color={colors.muted}>어제 인터벌 6.2km로 피로가 쌓였어요.{`\n`}대화할 수 있는 속도로 달려 보세요.</T><Metrics items={ [['높음', '어제 훈련 강도'], ['보통', '지금 피로도'], ['145↓', '권장 심박']] } /></Card>
     <Section title="오늘 할 운동" />{[['01', '워밍업', '빠르게 걷기 · 발목과 고관절 돌리기', '5분'], ['02', '편한 달리기 6km', '6:10~6:30/km · 심박 145 이하', '38분'], ['03', '마무리', '천천히 걷기 · 하체 스트레칭', '5분']].map(([number, title, desc, time]) => <Card key={number}><Row><T size={12} weight="bold" color={colors.blue}>{number}</T><T size={15} weight="bold">{title}</T><T size={12} color={colors.muted}>{time}</T></Row><T size={11} color={colors.muted}>{desc}</T></Card>)}

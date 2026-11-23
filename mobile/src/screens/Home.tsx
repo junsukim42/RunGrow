@@ -4,9 +4,15 @@ import { router } from 'expo-router';
 import { Button, Card, CourseMap, Icon, Legend, Metrics, Row, Runner, Screen, Section, Segments, Stack, T, Track, Week } from '../ui';
 import { colors } from '../theme';
 import { useDemo } from '../state';
+import { useMyRecords } from '../hooks/useMyRecords';
+import { formatDuration } from '../core/run/geo';
 
 export function HomeScreen() {
-  const { name, saved } = useDemo();
+  const { name } = useDemo();
+  const { ghost } = useMyRecords();
+  const best5k = formatDuration(ghost.recordSec * 1000);
+  const bestDate = ghost.startedAt ? new Date(ghost.startedAt) : null;
+  const bestCaption = bestDate ? `${bestDate.getMonth() + 1}월 ${bestDate.getDate()}일에 세운 기록이에요. 다시 도전해 볼까요?` : '예시 기록이에요. 5km를 완주하면 내 기록으로 바뀌어요.';
   const [competition, setCompetition] = useState('내 기록');
   const isFriend = competition === '친구와 1:1';
   const isRank = competition === '전체 순위';
@@ -15,8 +21,8 @@ export function HomeScreen() {
     <Card tone="dark" style={{ padding: 18 }}>
       <Segments options={['내 기록', '친구와 1:1', '전체 순위']} value={competition} onChange={setCompetition} />
       <T size={12} weight="medium" color="white">{isFriend ? '이번 주 서윤님과 거리 대결' : isRank ? '5km 전체 순위' : '5km 최고 기록'}</T>
-      <T size={isRank ? 48 : 58} weight="black" color="white">{isFriend ? '1.2km 앞' : isRank ? '1,284위' : saved ? '27:20' : '27:42'}</T>
-      <T size={12} color="white">{isFriend ? '멀리 있어도 같은 목표를 향해 달려요.' : isRank ? '상위 12% · 지난주보다 46계단 올랐어요.' : saved ? '어제의 나보다 22초 빨라졌어요.' : '지난주 달리기는 22초 모자랐어요.'}</T>
+      <T size={isRank ? 48 : 58} weight="black" color="white">{isFriend ? '1.2km 앞' : isRank ? '1,284위' : best5k}</T>
+      <T size={12} color="white">{isFriend ? '멀리 있어도 같은 목표를 향해 달려요.' : isRank ? '상위 12% · 지난주보다 46계단 올랐어요.' : bestCaption}</T>
       <Track /><Legend onHistory={() => router.push('/records')} />
       <Button tone="white" onPress={() => router.push(isFriend ? '/duel' : isRank ? '/ranking' : '/run')}>{isFriend ? '서윤님과 대결 보기' : isRank ? '전체 순위 보기' : '내 기록에 도전하기'}</Button>
     </Card>
@@ -26,7 +32,7 @@ export function HomeScreen() {
     <T size={11} color={colors.muted}>설문에서 고른 평지 · 아침 · 5~7km 기준이에요.</T>
     <Card onPress={() => router.push('/courses')} label="반포 한강공원 왕복 코스 상세"><T size={15} weight="bold">반포 한강공원 왕복</T><CourseMap /><Metrics items={ [['6.0', '거리 km'], ['+8', '오르막 m'], ['38', '예상 시간 분']] } /></Card>
     <Section title="5km 전체 순위" action="더 보기" onPress={() => router.push('/ranking')} />
-    <Card><Runner rank="1" name="박도윤" subtitle="서울 송파구" value="19:48" onPress={() => router.push('/duel')} /><Runner rank="1,284" name={name} subtitle="내 기록" value={saved ? '27:20' : '27:42'} me /></Card>
+    <Card><Runner rank="1" name="박도윤" subtitle="서울 송파구" value="19:48" onPress={() => router.push('/duel')} /><Runner rank="1,284" name={name} subtitle={ghost.isExample ? '내 기록(예시)' : '내 기록'} value={best5k} me /></Card>
     <Button onPress={() => router.push('/duel')}>친구와 함께 달리기</Button>
     <T size={10} color={colors.muted} style={{ textAlign: 'center' }}>화면 속 기록·날씨·추천은 시연용 데이터예요.</T>
   </Screen>;

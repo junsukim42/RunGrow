@@ -1,14 +1,17 @@
+import type { RunKind } from './core/run/session';
+
 export const courses = [
   { id: 'banpo', title: '반포 한강공원 왕복', location: '서울 서초구', distance: '6.0', elevation: '+8', minutes: '38', tags: '평지 · 강변 · 초보 추천', reason: '평지라서 오늘 가벼운 조깅에 알맞아요.' },
   { id: 'forest', title: '서울숲 순환', location: '서울 성동구', distance: '6.4', elevation: '+14', minutes: '41', tags: '평지 · 숲길 · 아침 추천', reason: '나무 그늘이 많아 아침에 달리기 좋아요.' },
   { id: 'namsan', title: '남산 북측순환로', location: '서울 중구', distance: '7.1', elevation: '+96', minutes: '49', tags: '언덕 · 숲길 · 중급 추천', reason: '가벼운 언덕으로 새로운 자극을 더해요.' },
 ] as const;
 export type Course = (typeof courses)[number];
-export type RunMode = 'ghost' | 'friend' | 'solo';
+export type RunMode = RunKind;
 export const runModes: { id: RunMode; title: string; description: string }[] = [
   { id: 'ghost', title: '기록 속의 나', description: '5km 최고 기록 27:42의 내가 함께 달려요' },
   { id: 'friend', title: '부산의 서윤님', description: '거리 대결 중 · 지금 1.2km 앞서고 있어요' },
   { id: 'solo', title: '혼자 자유롭게', description: '경쟁 없이 내 기록만 남겨요' },
+  { id: 'coaching', title: '오늘의 코칭', description: '10km 완주 플랜 4주 차 · 6km를 6′20″ 페이스로 가볍게' },
 ];
 export const leaderboard = [
   { rank: '1', name: '박도윤', location: '서울 송파구', record: '19:48' },
