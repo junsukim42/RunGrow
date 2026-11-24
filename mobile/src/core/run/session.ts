@@ -1,5 +1,5 @@
 // idle -> acquiring -> ready -> countdown -> recording <-> paused -> finished / confirmDiscard
-// idle -> recoverable -> recording / idle
+// idle -> recoverable -> finished / confirmDiscard / idle (강제 종료된 기록을 저장하거나 버림)
 import type { PauseReason } from '../contracts/recorder';
 
 export type RunKind = 'ghost' | 'friend' | 'solo' | 'coaching';
@@ -37,7 +37,6 @@ export type RunEvent =
   | { type: 'KEEP' }
   | { type: 'DISCARD' }
   | { type: 'FOUND_UNFINISHED'; runId: string }
-  | { type: 'CONTINUE' }
   | { type: 'RESET' };
 
 export const MIN_SAVE_DISTANCE_M = 100;
@@ -52,7 +51,7 @@ export function transition(state: RunState, event: RunEvent): RunState {
       if (event.type === 'FOUND_UNFINISHED') return { phase: 'recoverable', runId: event.runId };
       return state;
     case 'recoverable':
-      if (event.type === 'CONTINUE') return to('recording');
+      if (event.type === 'STOP') return stopTo(state, event.distanceM);
       if (event.type === 'DISCARD') return initialRunState;
       return state;
     case 'acquiring':

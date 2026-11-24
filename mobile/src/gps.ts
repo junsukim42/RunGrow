@@ -1,4 +1,5 @@
 import { requireOptionalNativeModule } from 'expo';
+import type { GpsPoint } from './core/contracts/recorder';
 import { PermissionsAndroid, Platform } from 'react-native';
 
 export type GpsSnapshot = {
@@ -17,6 +18,7 @@ export type GpsCommand = 'start' | 'pause' | 'resume' | 'stop';
 type GpsModule = Record<GpsCommand, () => Promise<void>> & {
   requestPermission?: () => Promise<boolean>;
   getSnapshot: () => Promise<GpsSnapshot>;
+  getPoints: () => Promise<GpsPoint[]>;
 };
 
 export const gps = Platform.OS === 'ios' || Platform.OS === 'android'

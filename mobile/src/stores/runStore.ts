@@ -13,6 +13,7 @@ export type RunStoreState = RunState & {
   snapshot: RecorderSnapshot;
   startedAt: number | null;
   savedRunId: string | null;
+  recoveredAt: number | null; // 강제 종료에서 복구한 기록의 마지막 저장 시각(ms)
   kind: RunKind;
   error: string | null;
   prepare(): Promise<void>;
@@ -26,15 +27,20 @@ export type RunStoreState = RunState & {
   keep(): Promise<void>;
   discard(): Promise<void>;
   checkRecovery(): Promise<void>;
-  continueRecovered(): void;
+  saveRecovered(): Promise<void>;
   reset(): void;
 };
+
+const CHECKPOINT_MS = 10_000;
 
 type Deps = Pick<Services, 'recorder' | 'db' | 'syncQueue'> & { source: RunSummary['source'] };
 
 export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
   const { recorder, db, syncQueue } = deps;
   let unsubscribe: (() => void) | null = null;
+  let checkpointing: Promise<void> | null = null;
+  let checkpointedAt = 0;
+  let checkpointedPoints = 0;
 
   return createStore<RunStoreState>((set, get) => {
     const send = (event: RunEvent) => {
@@ -54,19 +60,43 @@ export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
         const { phase } = get();
         if (phase === 'acquiring' && snapshot.firstFixMs !== undefined) send({ type: 'FIX' });
         if (phase === 'recording' || phase === 'paused') {
-        if (phase === 'recording' && snapshot.status === 'paused') send({ type: 'PAUSE', reason: snapshot.pauseReason ?? 'auto' });
-        if (phase === 'paused' && snapshot.status === 'recording') send({ type: 'RESUME' });
+          if (phase === 'recording' && snapshot.status === 'paused') send({ type: 'PAUSE', reason: snapshot.pauseReason ?? 'auto' });
+          if (phase === 'paused' && snapshot.status === 'recording') send({ type: 'RESUME' });
+          void checkpoint();
         }
       });
     };
 
     const stopListening = () => { unsubscribe?.(); unsubscribe = null; };
 
+    // 기록 중 주기적으로 스냅샷과 새 포인트를 저장해, 앱이 강제 종료돼도 복구할 수 있게 한다.
+    const checkpoint = (force = false): Promise<void> => {
+      const { runId, startedAt, snapshot, kind, phase } = get();
+      if (checkpointing || !runId || startedAt === null || (phase !== 'recording' && phase !== 'paused')) return checkpointing ?? Promise.resolve();
+      if (!force && Date.now() - checkpointedAt < CHECKPOINT_MS) return Promise.resolve();
+      checkpointing = (async () => {
+        try {
+          const points = await recorder.getPoints(runId);
+          await db.saveCheckpoint({ runId, startedAt, kind, snapshot, updatedAt: Date.now() }, points.slice(checkpointedPoints));
+          checkpointedPoints = points.length;
+          checkpointedAt = Date.now();
+        } catch {
+          // 저장 실패가 기록을 멈추면 안 된다. 다음 주기에 다시 시도한다.
+        } finally {
+          checkpointing = null;
+        }
+      })();
+      return checkpointing;
+    };
+
     const persist = async () => {
-      const { runId, snapshot, startedAt } = get();
+      const { runId, snapshot, startedAt, recoveredAt } = get();
       if (!runId || startedAt === null) return;
-      const points = await recorder.getPoints(runId);
-      const now = new Date().toISOString();
+      await checkpointing; // 진행 중인 체크포인트가 지운 뒤에 다시 쓰지 않게 기다린다
+      // 복구한 기록은 네이티브에 포인트가 없으므로 체크포인트로 저장해 둔 것을 쓴다.
+      const live = recoveredAt === null ? await recorder.getPoints(runId) : [];
+      const points = live.length > 0 ? live : await db.getPoints(runId);
+      const now = new Date(recoveredAt ?? Date.now()).toISOString();
       const movingSec = Math.round(snapshot.movingMs / 1000);
       const distanceM = Math.round(snapshot.distanceM);
       const run: LocalRun = {
@@ -91,6 +121,7 @@ export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
         lastSyncError: null,
       };
       await db.saveRun(run, points);
+      await db.clearCheckpoint({ keepPoints: true });
       set({ savedRunId: runId });
       void syncQueue.flush();
     };
@@ -100,6 +131,7 @@ export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
       snapshot: emptySnapshot,
       startedAt: null,
       savedRunId: null,
+      recoveredAt: null,
       kind: 'solo',
       error: null,
 
@@ -109,7 +141,9 @@ export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
         if (!(await recorder.requestPermission())) return set({ error: '정확한 위치 권한이 필요해요.' });
         if (get().phase !== 'idle') return;
         send({ type: 'PREPARE', runId: uuidv7() });
-        set({ snapshot: emptySnapshot, startedAt: null, savedRunId: null });
+        set({ snapshot: emptySnapshot, startedAt: null, savedRunId: null, recoveredAt: null });
+        checkpointedAt = 0;
+        checkpointedPoints = 0;
         listen();
         try {
           await recorder.prepare();
@@ -146,6 +180,7 @@ export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
         if (get().phase !== 'recording') return;
         await recorder.pause();
         send({ type: 'PAUSE', reason: 'manual' });
+        void checkpoint(true);
       },
       async resume() {
         if (get().phase !== 'paused') return;
@@ -164,21 +199,22 @@ export function createRunStore(deps: Deps): StoreApi<RunStoreState> {
         if (send({ type: 'KEEP' }).phase === 'finished') await persist();
       },
       async discard() {
-        if (get().phase === 'recoverable') await recorder.stop();
         send({ type: 'DISCARD' });
-        set({ snapshot: emptySnapshot, startedAt: null });
+        set({ snapshot: emptySnapshot, startedAt: null, recoveredAt: null });
+        await checkpointing;
+        await db.clearCheckpoint().catch(() => undefined);
       },
       async checkRecovery() {
         if (get().phase !== 'idle') return;
-        const session = await recorder.getUnfinishedSession();
-        if (!session) return;
-        send({ type: 'FOUND_UNFINISHED', runId: session.runId });
-        set({ snapshot: session.snapshot, startedAt: session.startedAt });
+        const saved = await db.loadCheckpoint().catch(() => null);
+        if (!saved) return;
+        if (get().phase !== 'idle') return;
+        send({ type: 'FOUND_UNFINISHED', runId: saved.runId });
+        set({ snapshot: saved.snapshot, startedAt: saved.startedAt, kind: saved.kind, recoveredAt: saved.updatedAt });
       },
-      continueRecovered() {
+      async saveRecovered() {
         if (get().phase !== 'recoverable') return;
-        listen();
-        send({ type: 'CONTINUE' });
+        if (send({ type: 'STOP', distanceM: get().snapshot.distanceM }).phase === 'finished') await persist();
       },
       reset() {
         stopListening();

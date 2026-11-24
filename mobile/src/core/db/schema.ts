@@ -1,4 +1,4 @@
-// op-sqlite 스키마 (아직 미사용)
+// expo-sqlite 로컬 스키마. 바꿀 때는 버전을 올리고 sqliteDb.ts의 migrate에 단계를 추가한다.
 export const LOCAL_SCHEMA_VERSION = 1;
 
 export const LOCAL_SCHEMA_SQL = `
@@ -43,5 +43,15 @@ CREATE TABLE IF NOT EXISTS points (
   speed    REAL,
   accepted INTEGER NOT NULL,
   PRIMARY KEY (run_id, t)
+);
+
+-- 기록 중인 세션 체크포인트(한 줄). 앱이 강제 종료돼도 복구할 수 있게 주기적으로 저장한다.
+CREATE TABLE IF NOT EXISTS active_session (
+  id            INTEGER PRIMARY KEY CHECK (id = 1),
+  run_id        TEXT NOT NULL,
+  started_at    INTEGER NOT NULL,
+  kind          TEXT NOT NULL,
+  snapshot_json TEXT NOT NULL,
+  updated_at    INTEGER NOT NULL
 );
 `;

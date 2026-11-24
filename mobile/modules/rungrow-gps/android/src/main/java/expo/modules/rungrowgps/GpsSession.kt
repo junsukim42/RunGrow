@@ -20,6 +20,7 @@ internal class GpsSession {
   private var distanceMeters = 0.0
   private var firstFixMs: Double? = null
   private var message: String? = null
+  private val points = mutableListOf<Map<String, Any>>()
 
   val isRecording: Boolean get() = state == State.RECORDING
   val isActive: Boolean get() = isRecording || state == State.PAUSED
@@ -77,18 +78,36 @@ internal class GpsSession {
 
     lastSample = sample
     sampleCount++
-    if (sample.accuracy > 20) return
 
-    lastAccepted?.let { previous ->
+    var accepted = sample.accuracy <= 20
+    val previous = lastAccepted
+    if (accepted && previous != null) {
       val meters = sample.distanceTo(previous)
       val seconds = (timestamp - previous.elapsedRealtimeNanos) / 1e9
-      if (meters / seconds > 12) return
-      distanceMeters += meters
+      if (meters / seconds <= 12) distanceMeters += meters else accepted = false
     }
+    appendPoint(sample, accepted)
+    if (!accepted) return
+
     lastAccepted = sample
     acceptedCount++
     if (firstFixMs == null) firstFixMs = (timestamp - sessionStartedAt) / 1e6
   }
+
+  private fun appendPoint(sample: Location, accepted: Boolean) {
+    val point = mutableMapOf<String, Any>(
+      "t" to sample.time.toDouble(),
+      "lat" to sample.latitude,
+      "lng" to sample.longitude,
+      "acc" to sample.accuracy.toDouble(),
+      "accepted" to accepted,
+    )
+    if (sample.hasAltitude()) point["alt"] = sample.altitude
+    if (sample.hasSpeed()) point["speed"] = sample.speed.toDouble()
+    points.add(point)
+  }
+
+  fun recordedPoints(): List<Map<String, Any>> = points.toList()
 
   fun snapshot() = buildMap<String, Any> {
     val moving = movingSince?.let { SystemClock.elapsedRealtimeNanos() - it } ?: 0L

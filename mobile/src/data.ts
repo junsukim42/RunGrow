@@ -9,7 +9,7 @@ export type Course = (typeof courses)[number];
 export type RunMode = RunKind;
 export const runModes: { id: RunMode; title: string; description: string }[] = [
   { id: 'ghost', title: '기록 속의 나', description: '5km 최고 기록 27:42의 내가 함께 달려요' },
-  { id: 'friend', title: '부산의 서윤님', description: '거리 대결 중 · 지금 1.2km 앞서고 있어요' },
+  { id: 'friend', title: '친구와 1:1', description: '친구와 같은 거리를 달리며 겨뤄요' },
   { id: 'solo', title: '혼자 자유롭게', description: '경쟁 없이 내 기록만 남겨요' },
   { id: 'coaching', title: '오늘의 코칭', description: '10km 완주 플랜 4주 차 · 6km를 6′20″ 페이스로 가볍게' },
 ];

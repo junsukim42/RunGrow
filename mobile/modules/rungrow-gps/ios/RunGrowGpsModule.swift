@@ -17,6 +17,7 @@ public final class RunGrowGpsModule: Module {
     AsyncFunction("resume") { [recorder] in recorder.resume() }.runOnQueue(.main)
     AsyncFunction("stop") { [recorder] in recorder.stop() }.runOnQueue(.main)
     AsyncFunction("getSnapshot") { [recorder] in recorder.snapshot() }.runOnQueue(.main)
+    AsyncFunction("getPoints") { [recorder] in recorder.recordedPoints() }.runOnQueue(.main)
 
     OnDestroy { [recorder] in
       DispatchQueue.main.async { recorder.stop() }
@@ -53,6 +54,7 @@ private final class GpsRecorder: NSObject, CLLocationManagerDelegate {
   private var distanceMeters = 0.0
   private var firstFixMs: Double?
   private var message: String?
+  private var points: [[String: Any]] = []
 
   private var hasPreciseLocation: Bool {
     let status = manager.authorizationStatus
@@ -83,6 +85,7 @@ private final class GpsRecorder: NSObject, CLLocationManagerDelegate {
     lastSample = nil
     firstFixMs = nil
     message = nil
+    points = []
     sessionStartedAt = Date()
     beginSegment()
   }
@@ -164,14 +167,19 @@ private final class GpsRecorder: NSObject, CLLocationManagerDelegate {
 
       lastSample = sample
       sampleCount += 1
-      guard sample.horizontalAccuracy <= 20 else { continue }
 
-      if let previous = lastAccepted {
+      var accepted = sample.horizontalAccuracy <= 20
+      if accepted, let previous = lastAccepted {
         let meters = sample.distance(from: previous)
         let seconds = sample.timestamp.timeIntervalSince(previous.timestamp)
-        guard meters / seconds <= 12 else { continue }
-        distanceMeters += meters
+        if meters / seconds <= 12 {
+          distanceMeters += meters
+        } else {
+          accepted = false
+        }
       }
+      appendPoint(sample, accepted: accepted)
+      guard accepted else { continue }
 
       lastAccepted = sample
       acceptedCount += 1
@@ -180,6 +188,21 @@ private final class GpsRecorder: NSObject, CLLocationManagerDelegate {
       }
     }
   }
+
+  private func appendPoint(_ sample: CLLocation, accepted: Bool) {
+    var point: [String: Any] = [
+      "t": (sample.timestamp.timeIntervalSince1970 * 1000).rounded(),
+      "lat": sample.coordinate.latitude,
+      "lng": sample.coordinate.longitude,
+      "acc": sample.horizontalAccuracy,
+      "accepted": accepted
+    ]
+    if sample.verticalAccuracy >= 0 { point["alt"] = sample.altitude }
+    if sample.speed >= 0 { point["speed"] = sample.speed }
+    points.append(point)
+  }
+
+  func recordedPoints() -> [[String: Any]] { points }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     guard state == .recording else { return }

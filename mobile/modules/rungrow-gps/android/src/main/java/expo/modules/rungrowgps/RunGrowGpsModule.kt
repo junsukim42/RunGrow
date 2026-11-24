@@ -36,6 +36,7 @@ class RunGrowGpsModule : Module() {
     AsyncFunction("resume") { session.resume() }.runOnQueue(Queues.MAIN)
     AsyncFunction("stop") { session.stop() }.runOnQueue(Queues.MAIN)
     AsyncFunction("getSnapshot") { session.snapshot() }.runOnQueue(Queues.MAIN)
+    AsyncFunction("getPoints") { session.recordedPoints() }.runOnQueue(Queues.MAIN)
 
     OnDestroy {
       Handler(Looper.getMainLooper()).post { session.stop() }

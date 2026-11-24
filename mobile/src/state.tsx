@@ -9,7 +9,7 @@ type DemoState = {
   name: string; setName: (name: string) => void;
   mode: RunMode; setMode: (mode: RunMode) => void;
   distance: number; setDistance: (distance: number) => void;
-  courseId: string; setCourseId: (id: string) => void;
+  courseId: string | null; setCourseId: (id: string | null) => void;
   preferences: Preferences; toggle: (key: keyof Preferences) => void;
   saved: boolean; save: () => void;
   toast: (message: string) => void;
@@ -19,7 +19,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [name, setName] = useState('지호');
   const [mode, setMode] = useState<RunMode>('ghost');
   const [distance, setDistance] = useState(5);
-  const [courseId, setCourseId] = useState<string>(courses[0].id);
+  const [courseId, setCourseId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<Preferences>({ voice: true, splits: true, opponent: true, notifications: true, publicProfile: false });
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState('');
@@ -38,5 +38,5 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   </Context.Provider>;
 }
 export function useDemo() { const state = useContext(Context); if (!state) throw new Error('DemoProvider is required'); return state; }
-export function useCourse() { const { courseId } = useDemo(); return courses.find(course => course.id === courseId) ?? courses[0]; }
+export function useCourse() { const { courseId } = useDemo(); return courses.find(course => course.id === courseId) ?? null; }
 const styles = StyleSheet.create({ toast: { position: 'absolute', left: 24, right: 24, backgroundColor: colors.ink, borderRadius: 16, padding: 16, zIndex: 100 }, message: { color: 'white', fontFamily: fonts.medium, fontSize: 12, lineHeight: 20, textAlign: 'center' } });

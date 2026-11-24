@@ -21,14 +21,17 @@ export function CourseScreen() {
   const currentCourse = useCourse();
   const { setCourseId, toast } = useDemo();
   const { select } = useLocalSearchParams<{ select?: string }>();
-  const [preview, setPreview] = useState<string>(currentCourse.id);
-  const course = courses.find(item => item.id === preview) ?? courses[0];
-  const choose = () => { setCourseId(course.id); toast(`${course.title} 코스를 선택했어요.`); if (select === 'true' && router.canGoBack()) router.back(); else router.push('/run'); };
-  return <Screen testID="screen-courses" footer={<Button onPress={choose}>{select === 'true' ? '이 코스 선택하기' : '이 코스로 달리기'}</Button>}><Header title="코스 상세" /><T size={11} weight="medium" color={colors.blue}>{course.location}</T><T size={28} weight="bold">{course.title.replace(' 왕복', '\n왕복 코스')}</T><T size={12} weight="bold" color={colors.green}>{course.tags}</T>
+  const [preview, setPreview] = useState<string | null>(currentCourse?.id ?? null);
+  const course = courses.find(item => item.id === preview) ?? null;
+  const choose = () => { setCourseId(course?.id ?? null); toast(course ? `${course.title} 코스를 선택했어요.` : '코스 없이 달려요.'); if (select === 'true' && router.canGoBack()) router.back(); else router.push('/run'); };
+  const selectLabel = !course ? '코스 없이 달리기' : select === 'true' ? '이 코스 선택하기' : '이 코스로 달리기';
+  return <Screen testID="screen-courses" footer={<Button onPress={choose}>{select === 'true' && !course ? '코스 선택 안 함' : selectLabel}</Button>}><Header title="코스 상세" />
+    {course ? <><T size={11} weight="medium" color={colors.blue}>{course.location}</T><T size={28} weight="bold">{course.title.replace(' 왕복', '\n왕복 코스')}</T><T size={12} weight="bold" color={colors.green}>{course.tags}</T>
     <Card><CourseMap /><T size={10} color={colors.muted}>러닝 코스 개략도 · 실제 길 안내는 제공하지 않아요</T><Metrics items={[[course.distance, '거리 km'], [course.elevation, '오르막 m'], [course.minutes, '예상 시간 분']]} /></Card>
-    <Section title="추천하는 이유" /><Card>{[course.reason, '1km마다 구간 페이스를 확인해 보세요.', '아침 시간대에 여유롭게 달려요.'].map(reason => <Row key={reason} style={{ gap: 10, justifyContent: 'flex-start' }}><T color={colors.green} weight="bold">✓</T><T size={12} style={{ flex: 1 }}>{reason}</T></Row>)}</Card>
-    <Section title="다른 추천 코스" /><Stack>{courses.map(item => <Card key={item.id} tone={preview === item.id ? 'soft' : 'white'} onPress={() => setPreview(item.id)} label={`${item.title} 미리보기`} style={{ padding: 16 }}><Row><T size={13} weight="bold">{item.title}</T><T size={12} color={colors.blue}>{preview === item.id ? '선택됨' : `${item.distance}km`}</T></Row><T size={11} color={colors.muted}>{item.tags}</T></Card>)}</Stack>
-    <Section title="이 코스 순위" /><Card><Runner rank="1" name="박도윤" subtitle="코스 최고 기록" value="22:51" /><Runner rank="18" name="지호" subtitle="내 기록" value="33:10" me /></Card>
+    <Section title="추천하는 이유" /><Card>{[course.reason, '1km마다 구간 페이스를 확인해 보세요.', '아침 시간대에 여유롭게 달려요.'].map(reason => <Row key={reason} style={{ gap: 10, justifyContent: 'flex-start' }}><T color={colors.green} weight="bold">✓</T><T size={12} style={{ flex: 1 }}>{reason}</T></Row>)}</Card></>
+    : <Card tone="soft" style={{ padding: 16 }}><T size={16} weight="bold">코스 없이 달려요</T><T size={12} color={colors.muted}>정해진 길 없이 원하는 곳에서 자유롭게 달려요. 기록은 그대로 저장돼요.</T></Card>}
+    <Section title="코스" /><Stack><Card tone={preview === null ? 'soft' : 'white'} onPress={() => setPreview(null)} label="코스 선택 없음" style={{ padding: 16 }}><Row><T size={13} weight="bold">선택 없음</T>{preview === null && <T size={12} color={colors.blue}>선택됨</T>}</Row><T size={11} color={colors.muted}>코스 없이 자유롭게 달려요</T></Card>{courses.map(item => <Card key={item.id} tone={preview === item.id ? 'soft' : 'white'} onPress={() => setPreview(item.id)} label={`${item.title} 미리보기`} style={{ padding: 16 }}><Row><T size={13} weight="bold">{item.title}</T><T size={12} color={colors.blue}>{preview === item.id ? '선택됨' : `${item.distance}km`}</T></Row><T size={11} color={colors.muted}>{item.tags}</T></Card>)}</Stack>
+    {course && <><Section title="이 코스 순위" /><Card><Runner rank="1" name="박도윤" subtitle="코스 최고 기록" value="22:51" /><Runner rank="18" name="지호" subtitle="내 기록" value="33:10" me /></Card></>}
   </Screen>;
 }
 
